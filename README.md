@@ -27,6 +27,7 @@ curl http://localhost:80/health
 ```
 
 ## Deployment on Azure VM (Ubuntu) - use sudo if not initialize from a userscript
+apt update
 apt install -y nodejs npm git
 git clone https://github.com/hswg94/nodeapi-demo.git
 cd nodeapi-demo
