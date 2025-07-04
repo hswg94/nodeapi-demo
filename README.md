@@ -4,6 +4,7 @@ This is a barebones Express.js API
 
 ## Features
 - Simple Express server
+- Reachable at `/`
 - Health check endpoint at `/health`
 
 ## Getting Started
@@ -23,7 +24,7 @@ The server will run on port 80 by default. You can change the port in index.js
 ### 3. Test the health endpoint
 Visit `http://yourip:80/health` in your browser or use curl:
 ```
-curl http://localhost:80/health
+curl http://yourip:80/health
 ```
 
 ## Deployment on Azure VM (Ubuntu) - use sudo if not initialize from a userscript
