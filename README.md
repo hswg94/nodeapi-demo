@@ -1,6 +1,6 @@
 # NodeAPI Demo
 
-This is a barebones Express.js API designed for easy deployment on an Azure VM running Ubuntu.
+This is a barebones Express.js API
 
 ## Features
 - Simple Express server
@@ -15,21 +15,20 @@ npm install
 
 ### 2. Start the server
 ```
-npm start
+node index.js
 ```
 
-The server will run on port 3000 by default. You can change the port by setting the `PORT` environment variable.
+The server will run on port 80 by default. You can change the port in index.js
 
 ### 3. Test the health endpoint
-Visit `http://<your-vm-ip>:3000/health` in your browser or use curl:
+Visit `http://yourip:80/health` in your browser or use curl:
 ```
-curl http://localhost:3000/health
+curl http://localhost:80/health
 ```
 
-## Deployment on Azure VM (Ubuntu)
-1. SSH into your VM.
-2. Clone or copy this project to the VM.
-3. Make sure Node.js and npm are installed (`node -v` and `npm -v`).
-4. Run `npm install` and `npm start` as above.
-5. Use a process manager like `pm2` for production (optional).
-
+## Deployment on Azure VM (Ubuntu) - use sudo if not initialize from a userscript
+apt install -y nodejs npm git
+git clone https://github.com/hswg94/nodeapi-demo.git
+cd nodeapi-demo
+npm i
+node index.js
