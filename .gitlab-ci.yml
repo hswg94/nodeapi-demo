@@ -43,10 +43,13 @@ deploy:
     EC2_HOST: 54.255.182.118
     EC2_USER: ec2-user
   before_script:
-    - apk add --no-cache openssh-client
+    - apk add --no-cache openssh-client curl
     - chmod 600 "$SSH_KEY"
   script:
+    - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo systemctl enable --now docker"
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "echo \"$REGISTRY_PASS\" | sudo docker login -u \"$REGISTRY_USER\" --password-stdin"
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker pull \"$IMAGE_NAME:latest\""
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker rm -f nodeapi-demo || true"
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker run -d --name nodeapi-demo -p 80:3000 \"$IMAGE_NAME:latest\""
+  after_script:
+    - curl http://$EC2_HOST/health
