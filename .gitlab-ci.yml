@@ -1,8 +1,9 @@
-image: node:18
+image: node:25-slim
 
 stages:
   - install
   - test
+  - build
   - deploy
 
 cache:
@@ -21,6 +22,19 @@ test:
   stage: test
   script:
     - npm test
+
+build_image:
+  stage: build
+  image: docker:stable
+  services:
+    - docker:stable-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASS
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - docker push $IMAGE_NAME:$IMAGE_TAG
 
 deploy:
   stage: deploy

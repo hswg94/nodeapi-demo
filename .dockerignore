@@ -1,0 +1,16 @@
+# Node
+node_modules
+npm-debug.log
+
+# Git
+.git
+.gitignore
+
+# Tests and CI
+__tests__
+coverage
+
+# Local configs
+.vscode
+.idea
+*.md
