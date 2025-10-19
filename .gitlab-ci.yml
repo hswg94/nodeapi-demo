@@ -43,6 +43,7 @@ deploy:
     EC2_HOST: 13.212.240.238
     EC2_USER: ec2-user
   before_script:
+    - apk add --no-cache openssh-client
     # Decode base64 SSH key from CI/CD variable SSH_PRIVATE_KEY_B64 (set in GitLab settings)
     - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > /tmp/aws_ssh_key
     - chmod 400 /tmp/aws_ssh_key
