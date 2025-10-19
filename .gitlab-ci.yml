@@ -44,10 +44,10 @@ deploy:
     EC2_USER: ec2-user
   before_script:
     # Decode base64 SSH key from CI/CD variable SSH_PRIVATE_KEY_B64 (set in GitLab settings)
-    - printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-    - chmod 400 ~/.ssh/id_rsa
+    - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > /tmp/aws_ssh_key
+    - chmod 400 /tmp/aws_ssh_key
   script:
-    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "
+    - ssh -o StrictHostKeyChecking=no -i /tmp/aws_ssh_key $EC2_USER@$EC2_HOST "
         sudo docker login -u $REGISTRY_USER -p $REGISTRY_PASS &&
         sudo docker ps -aq | xargs sudo docker stop | xargs sudo docker rm &&
         sudo docker run -d -p 80:3000 $IMAGE_NAME:latest
