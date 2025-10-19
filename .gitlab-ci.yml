@@ -40,23 +40,14 @@ deploy:
   stage: deploy
   image: alpine:3.20
   variables:
-    EC2_HOST: 54.179.124.230        # change to your instance public IP or DNS
-    EC2_USER: ec2-user               # Amazon Linux default user
-    IMAGE_TAG: latest                # ensure your build job pushes this tag
+    EC2_HOST: 13.212.240.238
+    EC2_USER: ec2-user
   before_script:
-    - apk add --no-cache openssh-client bash
-    - mkdir -p ~/.ssh
     # Decode base64 SSH key from CI/CD variable SSH_PRIVATE_KEY_B64 (set in GitLab settings)
     - printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    # Preload host key to avoid interactive prompt
-    - ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+    - chmod 400 ~/.ssh/id_rsa
   script:
-    - |
-      ssh -o StrictHostKeyChecking=yes -i ~/.ssh/id_rsa "$EC2_USER@$EC2_HOST" bash -s <<EOF
-      set -euo pipefail
-      echo "$REGISTRY_PASS" | sudo docker login -u "$REGISTRY_USER" --password-stdin
-      sudo docker pull "$IMAGE_NAME:$IMAGE_TAG"
-      sudo docker rm -f nodeapi-demo || true
-      sudo docker run -d --name nodeapi-demo -p 80:3000 -e NODE_ENV=production -e PORT=3000 "$IMAGE_NAME:$IMAGE_TAG"
-      EOF
+    - ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $EC2_USER@$EC2_HOST "
+        sudo docker login -u $REGISTRY_USER -p $REGISTRY_PASS &&
+        sudo docker ps -aq | xargs sudo docker stop | xargs sudo docker rm &&
+        sudo docker run -d -p 80:3000 $IMAGE_NAME:latest
