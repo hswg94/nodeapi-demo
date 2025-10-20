@@ -27,7 +27,7 @@ build_image:
   stage: build
   image: docker:25
   services:
-    - docker:25-dind
+    - docker:25-dind # need a daemon to run and execute docker commands
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
