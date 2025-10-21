@@ -73,7 +73,7 @@ app.get('/health', (req, res) => {
 
 app.get('/', (req, res) => {
   const containerIP = getContainerIP();
-  res.status(200).send(`OK - Container IP: ${containerIP}, Client IP: ${req.ip}`);
+  res.status(200).send(`OK - App Container IP: ${containerIP}, Client IP: ${req.ip}`);
   console.log('Root Endpoint Hit - Container IP:', containerIP, 'Client IP:', req.ip);
 });
 
