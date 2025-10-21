@@ -44,9 +44,8 @@ deploy:
     EC2_USER: ec2-user
   before_script:
     - apk add --no-cache openssh-client curl
-    - chmod 600 "$SSH_KEY"
-  script:
-    - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "echo \"$REGISTRY_PASS\" | sudo docker login -u \"$REGISTRY_USER\" --password-stdin"
+    - chmod 600 "$SSH_KEY" #owner can read and write, all others have no permissions
+    - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker login -u "$REGISTRY_USER" --password-stdin <<< "$REGISTRY_PASS""
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker rm -f nodeapi-demo-1 || true"
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker rm -f nodeapi-demo-2 || true"
     - ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" $EC2_USER@$EC2_HOST "sudo docker pull \"$IMAGE_NAME:$CI_COMMIT_SHORT_SHA\""
