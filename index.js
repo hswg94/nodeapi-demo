@@ -54,7 +54,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.status(200).send('OK', req.ip);
+  res.status(200).send(`OK - Your IP: ${req.ip}`);
   console.log('Root Endpoint Hit by IP:', req.ip);
 });
 
