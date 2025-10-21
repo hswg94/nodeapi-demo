@@ -8,6 +8,9 @@ import divide from './utils/divide.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Trust proxy to get real IPs through Docker bridge
+app.set('trust proxy', true);
+
 // Addition endpoint: /add?a=1&b=2
 app.get('/add', (req, res) => {
   try {
