@@ -4,12 +4,27 @@ import add from './utils/add.js';
 import subtract from './utils/subtract.js';
 import multiply from './utils/multiply.js';
 import divide from './utils/divide.js';
+import os from 'os';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Trust proxy to get real IPs through Docker bridge
 app.set('trust proxy', true);
+
+// Get container's own IP address
+function getContainerIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Skip internal and loopback addresses
+      if (!iface.internal && iface.family === 'IPv4') {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 // Addition endpoint: /add?a=1&b=2
 app.get('/add', (req, res) => {
@@ -57,8 +72,9 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.status(200).send(`OK - Your IP: ${req.ip}`);
-  console.log('Root Endpoint Hit by IP:', req.ip);
+  const containerIP = getContainerIP();
+  res.status(200).send(`OK - Container IP: ${containerIP}, Client IP: ${req.ip}`);
+  console.log('Root Endpoint Hit - Container IP:', containerIP, 'Client IP:', req.ip);
 });
 
 if (process.env.NODE_ENV !== 'test') {
