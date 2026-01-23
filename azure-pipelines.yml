@@ -1,21 +1,129 @@
-# Node.js
-# Build a general Node.js project with npm.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
-
 trigger:
 - main
 
-pool:
-  vmImage: ubuntu-latest
+stages:
+# ----------------------
+# INSTALL
+# ----------------------
+- stage: Install
+  displayName: Install
+  jobs:
+  - job: install
+    displayName: npm ci
+    pool:
+      # If you cannot use Microsoft-hosted agents (hosted parallelism = 0),
+      # point this to a self-hosted agent pool:
+      # name: your-self-hosted-pool
+      vmImage: ubuntu-latest
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '25.x'
+      displayName: Use Node.js 25
 
-steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+    # Cache npm to speed up npm ci runs
+    - task: Cache@2
+      inputs:
+        key: 'npm | "$(Agent.OS)" | package-lock.json'
+        restoreKeys: |
+          npm | "$(Agent.OS)"
+        path: $(Pipeline.Workspace)/.npm
+      displayName: Cache npm
 
-- script: |
-    npm install
-    npm run start
-  displayName: 'npm install and build'
+    - script: |
+        npm config set cache "$(Pipeline.Workspace)/.npm" --global
+        npm ci
+      displayName: npm ci
+
+    # Mimic GitLab "artifacts: node_modules" to reuse in later stages
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: node_modules
+        artifact: node_modules
+      displayName: Publish node_modules
+
+# ----------------------
+# TEST
+# ----------------------
+- stage: Test
+  displayName: Test
+  dependsOn: Install
+  jobs:
+  - job: test
+    displayName: npm test
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '25.x'
+      displayName: Use Node.js 25
+
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifact: node_modules
+        path: $(Build.SourcesDirectory)/node_modules
+      displayName: Download node_modules
+
+    - script: |
+        npm test
+      displayName: npm test
+
+# ----------------------
+# BUILD DOCKER IMAGE + PUSH
+# ----------------------
+- stage: Build
+  displayName: Build image
+  dependsOn: Test
+  jobs:
+  - job: build_image
+    displayName: Docker build & push
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        # Create a short SHA like GitLab's CI_COMMIT_SHORT_SHA
+        SHORT_SHA="$(echo "$(Build.SourceVersion)" | cut -c1-8)"
+        echo "##vso[task.setvariable variable=SHORT_SHA]$SHORT_SHA"
+        echo "Using tag: $SHORT_SHA"
+      displayName: Compute image tag
+
+    # Login to registry
+    - script: |
+        echo "$(REGISTRY_PASS)" | docker login -u "$(REGISTRY_USER)" --password-stdin
+      displayName: Docker login
+
+    # Build and push
+    - script: |
+        docker build -t "$(IMAGE_NAME):$(SHORT_SHA)" .
+        docker push "$(IMAGE_NAME):$(SHORT_SHA)"
+      displayName: Docker build & push
+
+# ----------------------
+# DEPLOY to Azure DevOps Environment: "Azure VMs"
+# ----------------------
+- stage: Deploy
+  displayName: Deploy
+  dependsOn: Build
+  jobs:
+  - deployment: deploy_to_vms
+    displayName: Deploy to Azure VMs environment
+    environment: 'Azure VMs'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - script: |
+              SHORT_SHA="$(echo "$(Build.SourceVersion)" | cut -c1-8)"
+              echo "$(REGISTRY_PASS)" | sudo docker login -u "$(REGISTRY_USER)" --password-stdin
+
+              sudo docker rm -f nodeapi-demo-1 || true
+              sudo docker rm -f nodeapi-demo-2 || true
+
+              sudo docker pull "$(IMAGE_NAME):$SHORT_SHA"
+              sudo docker run -d --name nodeapi-demo-1 -p 5000:3000 "$(IMAGE_NAME):$SHORT_SHA"
+              sudo docker run -d --name nodeapi-demo-2 -p 5001:3000 "$(IMAGE_NAME):$SHORT_SHA"
+
+              curl -fsS http://localhost:5000/health
+              curl -fsS http://localhost:5001/health
+            displayName: Pull + run containers + health check
